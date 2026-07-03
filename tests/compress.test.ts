@@ -48,13 +48,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await removeWithRetry(FIXTURES_DIR);
   await removeWithRetry(OUTPUT_DIR);
-  // Also clean up default -compressed folder
-  const compressedDir = `${FIXTURES_DIR}-compressed`;
-  if (await fs.pathExists(compressedDir)) {
-    await removeWithRetry(compressedDir);
-  }
 });
 
 // ─── Basic compression ──────────────────────────────────────────────
