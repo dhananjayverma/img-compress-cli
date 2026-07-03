@@ -422,7 +422,7 @@ async function watchLoop(options: CompressOptions): Promise<never> {
     }, 500);
   };
 
-  // Use fs.watch with recursive option (Node 18+)
+  // Use fs.watch with recursive option (Node 20+)
   try {
     const watcher = fs.watch(watchTarget, { recursive: true }, () => {
       handleChange();
