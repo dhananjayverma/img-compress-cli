@@ -1,6 +1,6 @@
 {
    "name": "@dhananjay_verma9546/pixora-compress",
-   "version": "1.0.1",
+   "version": "1.0.2",
    "description": "Fast, cross-platform, zero-config image compression CLI. Compress, resize, and convert images to WebP/AVIF with parallel processing, smart quality, and watch mode.",
    "type": "module",
    "bin": {
