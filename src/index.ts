@@ -1,12 +1,12 @@
 /**
- * img-compress-cli — Programmatic API
+ * pixora-compress — Programmatic API
  *
  * Use this to integrate image compression into build pipelines,
  * scripts, or other Node.js programs.
  *
  * @example
  * ```ts
- * import { compress } from 'img-compress-cli';
+ * import { compress } from '@dhananjay_verma9546/pixora-compress';
  *
  * const result = await compress('./images', {
  *   quality: 75,

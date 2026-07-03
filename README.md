@@ -1,10 +1,10 @@
-# ⚡ img-compress-cli
+# ⚡ pixora-compress
 
 > Fast, cross-platform, zero-config image compression CLI built on [sharp](https://sharp.pixelplumbing.com/).
 
-[![npm version](https://img.shields.io/npm/v/img-compress-cli.svg?style=flat-square&color=7C3AED)](https://www.npmjs.com/package/img-compress-cli)
-[![license](https://img.shields.io/npm/l/img-compress-cli.svg?style=flat-square)](LICENSE)
-[![node](https://img.shields.io/node/v/img-compress-cli.svg?style=flat-square)](package.json)
+[![npm version](https://img.shields.io/npm/v/@dhananjay_verma9546/pixora-compress.svg?style=flat-square&color=7C3AED)](https://www.npmjs.com/package/@dhananjay_verma9546/pixora-compress)
+[![license](https://img.shields.io/npm/l/@dhananjay_verma9546/pixora-compress.svg?style=flat-square)](LICENSE)
+[![node](https://img.shields.io/node/v/@dhananjay_verma9546/pixora-compress.svg?style=flat-square)](package.json)
 
 Compress, resize, and convert images to modern formats — WebP, AVIF, optimized JPEG & PNG — with a single command. Built for developers who want fast asset optimization in their build pipelines.
 
@@ -34,10 +34,10 @@ Compress, resize, and convert images to modern formats — WebP, AVIF, optimized
 
 ```bash
 # Global install
-npm install -g img-compress-cli
+npm install -g @dhananjay_verma9546/pixora-compress
 
 # Or use directly with npx
-npx img-compress-cli ./images
+npx @dhananjay_verma9546/pixora-compress ./images
 ```
 
 ---
@@ -131,10 +131,10 @@ Or use any of these formats:
 
 ## 📡 Programmatic API
 
-Use `img-compress-cli` in your Node.js scripts or build tools:
+Use `@dhananjay_verma9546/pixora-compress` in your Node.js scripts or build tools:
 
 ```ts
-import { compress } from 'img-compress-cli';
+import { compress } from '@dhananjay_verma9546/pixora-compress';
 
 const result = await compress('./images', {
   quality: 75,
@@ -187,7 +187,7 @@ interface CompressApiOptions {
 ### In a build script
 
 ```ts
-import { compress } from 'img-compress-cli';
+import { compress } from '@dhananjay_verma9546/pixora-compress';
 
 // Pre-build step
 await compress('./src/assets', {
