@@ -7,6 +7,18 @@ import { compress } from '../src/index.js';
 const FIXTURES_DIR = path.join(import.meta.dirname, '__fixtures__');
 const OUTPUT_DIR = path.join(import.meta.dirname, '__output__');
 
+async function removeWithRetry(target: string, attempts = 5): Promise<void> {
+  for (let index = 0; index < attempts; index += 1) {
+    try {
+      await fs.remove(target);
+      return;
+    } catch (error) {
+      if (index === attempts - 1) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+}
+
 // ─── Create test images ─────────────────────────────────────────────
 
 beforeAll(async () => {
@@ -36,12 +48,12 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await fs.remove(FIXTURES_DIR);
-  await fs.remove(OUTPUT_DIR);
+  await removeWithRetry(FIXTURES_DIR);
+  await removeWithRetry(OUTPUT_DIR);
   // Also clean up default -compressed folder
   const compressedDir = `${FIXTURES_DIR}-compressed`;
   if (await fs.pathExists(compressedDir)) {
-    await fs.remove(compressedDir);
+    await removeWithRetry(compressedDir);
   }
 });
 
