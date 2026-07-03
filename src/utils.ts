@@ -49,12 +49,19 @@ export function formatPercent(value: number): string {
 
 // ─── Path utilities ──────────────────────────────────────────────────
 
+function getPathApi(filePath: string): typeof path.posix | typeof path.win32 {
+  return /[\\]/.test(filePath) || /^[a-zA-Z]:/.test(filePath) ? path.win32 : path.posix;
+}
+
+function resolvePathLike(filePath: string): string {
+  const api = getPathApi(filePath);
+  return api.isAbsolute(filePath) ? api.normalize(filePath) : path.resolve(filePath);
+}
+
 export function replaceExt(filePath: string, newExt: string): string {
+  const api = getPathApi(filePath);
   const ext = newExt.startsWith('.') ? newExt : `.${newExt}`;
-  return path.join(
-    path.dirname(filePath),
-    `${path.basename(filePath, path.extname(filePath))}${ext}`,
-  );
+  return api.join(api.dirname(filePath), `${api.basename(filePath, api.extname(filePath))}${ext}`);
 }
 
 export function normalizeFormatName(format: string): string {
@@ -110,9 +117,12 @@ export function getOutputRoot(
   overwrite: boolean,
 ): string | null {
   if (overwrite) return null;
-  if (outputDir) return path.resolve(outputDir);
+  if (outputDir) {
+    const api = getPathApi(outputDir);
+    return api.isAbsolute(outputDir) ? api.normalize(outputDir) : path.resolve(outputDir);
+  }
 
-  const resolvedInput = path.resolve(inputPath);
+  const resolvedInput = resolvePathLike(inputPath);
   const stats = fs.existsSync(resolvedInput) ? fs.statSync(resolvedInput) : null;
   if (stats?.isDirectory()) {
     return `${resolvedInput}-compressed`;
@@ -138,26 +148,27 @@ export function buildOutputPath({
   targetFormat,
   overwrite,
 }: BuildOutputPathOptions): string {
+  const api = getPathApi(inputRoot);
   if (overwrite) return sourceFile;
 
-  const sourceRoot = path.resolve(inputRoot);
-  const absoluteSource = path.resolve(sourceFile);
-  const relative = path.relative(sourceRoot, absoluteSource);
-  const hasRelative = relative && relative !== '..' && !relative.startsWith(`..${path.sep}`);
+  const sourceRoot = resolvePathLike(inputRoot);
+  const absoluteSource = resolvePathLike(sourceFile);
+  const relative = api.relative(sourceRoot, absoluteSource);
+  const hasRelative = relative && relative !== '..' && !relative.startsWith(`..${api.sep}`);
 
   if (outputRoot) {
     const baseTarget = hasRelative
-      ? path.join(outputRoot, relative)
-      : path.join(outputRoot, path.basename(sourceFile));
+      ? api.join(outputRoot, relative)
+      : api.join(outputRoot, api.basename(sourceFile));
     return replaceExt(baseTarget, normalizeFormatName(targetFormat));
   }
 
-  const sourceFormat = path.extname(sourceFile).slice(1).toLowerCase();
+  const sourceFormat = api.extname(sourceFile).slice(1).toLowerCase();
   const sameFormat = isSameImageFormat(sourceFormat, targetFormat);
-  const directory = path.dirname(sourceFile);
-  const base = path.basename(sourceFile, path.extname(sourceFile));
+  const directory = api.dirname(sourceFile);
+  const base = api.basename(sourceFile, api.extname(sourceFile));
   const name = sameFormat ? `${base}-compressed` : base;
-  return path.join(directory, `${name}.${normalizeFormatName(targetFormat)}`);
+  return api.join(directory, `${name}.${normalizeFormatName(targetFormat)}`);
 }
 
 // ─── Image discovery ─────────────────────────────────────────────────
