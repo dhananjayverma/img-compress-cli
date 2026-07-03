@@ -1,6 +1,5 @@
 import { program } from 'commander';
 import { cosmiconfig } from 'cosmiconfig';
-import chalk from 'chalk';
 import { compressImages } from './compress.js';
 import { buildRuntimeOptions } from './utils.js';
 import { logger } from './logger.js';
