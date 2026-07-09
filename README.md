@@ -292,6 +292,7 @@ console.log(`Saved ${result.summary.savedPercent}%`);
 
 ---
 
-## 🛡️ License
+## 🛡️ License & Privacy
 
-MIT License. Copyright (c) 2026.
+* **License**: MIT License. Copyright (c) 2026.
+* **Privacy Policy**: Pixora is a local-first application. It does not collect or transmit any personal data or assets. See [PRIVACY.md](file:///Users/laptopbazaar/Desktop/image/PRIVACY.md) for full details.
