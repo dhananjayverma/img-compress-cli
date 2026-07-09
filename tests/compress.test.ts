@@ -127,6 +127,8 @@ describe('compress API', () => {
       quality: 95,
     });
 
+    await fs.remove(path.join(process.cwd(), '.pixora'));
+
     const lowQ = await compress(path.join(FIXTURES_DIR, 'red.jpg'), {
       output: path.join(OUTPUT_DIR, 'low'),
       quality: 30,
