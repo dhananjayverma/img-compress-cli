@@ -37,6 +37,16 @@ exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
 const child_process_1 = require("child_process");
+const path = __importStar(require("path"));
+const fs = __importStar(require("fs"));
+function getCliExecutor() {
+    // Resolve path to the monorepo local CLI
+    const localCliPath = path.resolve(__dirname, '..', '..', 'dist', 'cli.js');
+    if (fs.existsSync(localCliPath)) {
+        return `node "${localCliPath}"`;
+    }
+    return 'pixora';
+}
 function isCliAvailable() {
     return new Promise((resolve) => {
         (0, child_process_1.exec)('pixora -v', (err) => {
@@ -45,6 +55,10 @@ function isCliAvailable() {
     });
 }
 async function ensureCliInstalled() {
+    // If we are in dev mode using local cli, bypass global installation check
+    if (getCliExecutor().startsWith('node')) {
+        return true;
+    }
     const available = await isCliAvailable();
     if (available) {
         return true;
@@ -93,7 +107,8 @@ function activate(context) {
             cancellable: false,
         }, async () => {
             return new Promise((resolve) => {
-                const command = `pixora compress "${filePath}" --overwrite --quality 80 --smart-quality --json`;
+                const executor = getCliExecutor();
+                const command = `${executor} compress "${filePath}" --overwrite --quality 80 --smart-quality --json`;
                 (0, child_process_1.exec)(command, (err, stdout, stderr) => {
                     try {
                         if (err) {
@@ -139,7 +154,8 @@ function activate(context) {
             cancellable: false,
         }, async () => {
             return new Promise((resolve) => {
-                const command = `pixora audit "${rootPath}" --json`;
+                const executor = getCliExecutor();
+                const command = `${executor} audit "${rootPath}" --json`;
                 (0, child_process_1.exec)(command, (err, stdout, stderr) => {
                     try {
                         if (err) {
