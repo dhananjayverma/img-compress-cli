@@ -13,6 +13,7 @@ export interface AuditResult {
   similarImages: { fileA: string; fileB: string; distance: number }[];
   missingWebP: string[];
   missingAVIF: string[];
+  totalImages: number;
 }
 
 async function computeExactHash(filePath: string): Promise<string> {
@@ -103,6 +104,7 @@ export async function runAudit(inputFolder: string): Promise<AuditResult> {
     }
   }
 
+  const totalImages = largestImages.length;
   largestImages.sort((a, b) => b.size - a.size);
 
   return {
@@ -111,6 +113,7 @@ export async function runAudit(inputFolder: string): Promise<AuditResult> {
     similarImages,
     missingWebP,
     missingAVIF,
+    totalImages,
   };
 }
 

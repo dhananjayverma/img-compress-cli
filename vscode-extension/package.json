@@ -4,13 +4,30 @@
   "description": "Developer Asset Optimization Platform in your editor. Compress assets, run audits, and analyze layout performance.",
   "version": "1.0.0",
   "publisher": "dhananjayverma",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dhananjayverma/img-compress-cli"
+  },
+  "homepage": "https://github.com/dhananjayverma/img-compress-cli",
+  "bugs": {
+    "url": "https://github.com/dhananjayverma/img-compress-cli/issues"
+  },
+  "keywords": [
+    "image",
+    "compression",
+    "optimizer",
+    "webp",
+    "avif",
+    "pixora",
+    "sharp"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -27,7 +44,7 @@
       "explorer/context": [
         {
           "command": "vscode-pixora.compressFile",
-          "when": "resourceExtName =~ /png|jpg|jpeg|webp|avif|gif|svg/",
+          "when": "resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .webp || resourceExtname == .avif || resourceExtname == .gif || resourceExtname == .svg",
           "group": "modification"
         }
       ]
@@ -40,9 +57,9 @@
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
-    "typescript": "^5.3.0"
-  },
-  "dependencies": {
+    "typescript": "^5.3.0",
     "@dhananjay_verma9546/pixora-compress": "file:.."
-  }
+  },
+  "dependencies": {}
 }
+

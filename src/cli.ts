@@ -56,6 +56,10 @@ async function loadConfig(): Promise<ConfigFile> {
 
 // ─── Banner ─────────────────────────────────────────────────────────
 
+if (process.argv.includes('--json')) {
+  logger.isSilent = true;
+}
+
 logger.banner();
 
 // ─── Root Program ────────────────────────────────────────────────────
@@ -94,16 +98,32 @@ program
     '--profile <name>',
     'compression profile: web | ecommerce | print | social | blog | thumbnail'
   )
+  .option('--json', 'output results as JSON')
   .action(async (input: string, cliOptions: Record<string, unknown>) => {
     try {
       const config = await loadConfig();
       const options = buildRuntimeOptions(input, cliOptions, config);
       const result = await compressImages(options);
-      if (result?.summary?.filesProcessed === 0) {
+      if (cliOptions.json) {
+        console.log(JSON.stringify({ success: true, ...result }, null, 2));
+      } else if (result?.summary?.filesProcessed === 0) {
         logger.warn('No supported images found.');
       }
     } catch (error) {
-      logger.error(error instanceof Error ? error.message : String(error));
+      if (cliOptions.json) {
+        console.log(
+          JSON.stringify(
+            {
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            },
+            null,
+            2
+          )
+        );
+      } else {
+        logger.error(error instanceof Error ? error.message : String(error));
+      }
       process.exitCode = 1;
     }
   });

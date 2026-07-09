@@ -1,0 +1,16 @@
+.vscode/**
+tsconfig.json
+extension.ts
+node_modules/@dhananjay_verma9546/pixora-compress/node_modules/**
+node_modules/@dhananjay_verma9546/pixora-compress/src/**
+node_modules/@dhananjay_verma9546/pixora-compress/tests/**
+node_modules/@dhananjay_verma9546/pixora-compress/examples/**
+node_modules/@dhananjay_verma9546/pixora-compress/eslint.config.js
+node_modules/@dhananjay_verma9546/pixora-compress/vitest.config.ts
+node_modules/@dhananjay_verma9546/pixora-compress/tsup.config.ts
+node_modules/@dhananjay_verma9546/pixora-compress/tsconfig.json
+node_modules/@dhananjay_verma9546/pixora-compress/package-lock.json
+node_modules/@dhananjay_verma9546/pixora-compress/Dockerfile
+node_modules/@dhananjay_verma9546/pixora-compress/action.yml
+node_modules/@dhananjay_verma9546/pixora-compress/create-icon.js
+node_modules/@dhananjay_verma9546/pixora-compress/create-icon.cjs
