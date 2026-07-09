@@ -1,6 +1,6 @@
 {
    "name": "@dhananjay_verma9546/pixora-compress",
-   "version": "1.1.0",
+   "version": "1.1.1",
    "description": "Pixora — Automated Asset Pipeline for Modern Web Apps & Developer Asset Optimization Platform.",
    "type": "module",
    "bin": {
