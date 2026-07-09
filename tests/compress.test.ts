@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import path from 'node:path';
 import fs from 'fs-extra';
 import sharp from 'sharp';
@@ -20,6 +20,10 @@ async function removeWithRetry(target: string, attempts = 5): Promise<void> {
 }
 
 // ─── Create test images ─────────────────────────────────────────────
+
+beforeEach(async () => {
+  await fs.remove(path.join(process.cwd(), '.pixora'));
+});
 
 beforeAll(async () => {
   await fs.ensureDir(FIXTURES_DIR);
