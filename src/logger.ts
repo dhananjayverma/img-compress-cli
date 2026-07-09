@@ -1,32 +1,32 @@
 import chalk from 'chalk';
 
-const PREFIX = chalk.hex('#7C3AED').bold('img-compress');
+const BRAND = chalk.hex('#7C3AED').bold('pixora');
 const SEPARATOR = chalk.dim('│');
 
 export const logger = {
   /** Branded info message */
   info(message: string): void {
-    console.log(`${PREFIX} ${SEPARATOR} ${message}`);
+    console.log(`${BRAND} ${SEPARATOR} ${chalk.cyan('ℹ')} ${message}`);
   },
 
   /** Success with green check */
   success(message: string): void {
-    console.log(`${PREFIX} ${SEPARATOR} ${chalk.green('✔')} ${message}`);
+    console.log(`${BRAND} ${SEPARATOR} ${chalk.green('✔')} ${message}`);
   },
 
   /** Warning in yellow */
   warn(message: string): void {
-    console.log(`${PREFIX} ${SEPARATOR} ${chalk.yellow('⚠')} ${chalk.yellow(message)}`);
+    console.log(`${BRAND} ${SEPARATOR} ${chalk.yellow('⚠')} ${chalk.yellow(message)}`);
   },
 
   /** Error in red */
   error(message: string): void {
-    console.error(`${PREFIX} ${SEPARATOR} ${chalk.red('✖')} ${chalk.red(message)}`);
+    console.error(`${BRAND} ${SEPARATOR} ${chalk.red('✖')} ${chalk.red(message)}`);
   },
 
   /** Dim secondary info */
   dim(message: string): void {
-    console.log(`${PREFIX} ${SEPARATOR} ${chalk.dim(message)}`);
+    console.log(`${BRAND} ${SEPARATOR} ${chalk.dim(message)}`);
   },
 
   /** Raw console log (no prefix) */
@@ -34,11 +34,17 @@ export const logger = {
     console.log(message);
   },
 
-  /** Print the branded banner */
+  /** Print the Pixora branded banner */
   banner(): void {
     console.log('');
-    console.log(chalk.hex('#7C3AED').bold('  ⚡ img-compress') + chalk.dim(' v1.0.0'));
-    console.log(chalk.dim('  Fast, zero-config image optimization'));
+    console.log(
+      chalk.hex('#7C3AED').bold('  ⚡ pixora') +
+        chalk.dim(' v1.1.0') +
+        chalk.dim('  — Asset Optimization Toolkit')
+    );
+    console.log(
+      chalk.dim('  compress  convert  resize  audit  compare  generate  watch  init  undo')
+    );
     console.log('');
   },
 };

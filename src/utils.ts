@@ -295,6 +295,8 @@ export function buildRuntimeOptions(
     concurrency: getDefaultConcurrency(parsed.concurrency as number | undefined),
     ignore: parsed.ignore as string[],
     formats: parsed.formats as string[],
+    profile: parsed.profile as string | undefined,
+    bestFormat: parsed.bestFormat === undefined ? undefined : Boolean(parsed.bestFormat),
   };
 
   return OptionsSchema.parse(result);

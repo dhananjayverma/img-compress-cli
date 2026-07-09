@@ -22,6 +22,9 @@ import {
 } from './utils.js';
 import type { CompressOptions, ProcessResult, ReportSummary } from './types.js';
 import { ENCODABLE_FORMATS } from './types.js';
+import { applyProfile } from './profiles.js';
+import { backupFile } from './backup.js';
+import { getCache, saveCache, getFileHash } from './cache.js';
 
 // ─── Progress bar wrapper ────────────────────────────────────────────
 
@@ -61,31 +64,69 @@ function makeWriter(total: number): ProgressWriter {
   };
 }
 
+// ─── Image Analyzer ──────────────────────────────────────────────────
+
+interface ImageAnalysisResult {
+  category: 'photo' | 'screenshot' | 'logo' | 'illustration';
+  bestFormat: string;
+  width?: number;
+  height?: number;
+}
+
+async function analyzeImage(inputFile: string): Promise<ImageAnalysisResult> {
+  try {
+    const img = sharp(inputFile);
+    const metadata = await img.metadata();
+    const stats = await img.stats();
+
+    const hasAlpha = metadata.hasAlpha ?? false;
+    const width = metadata.width ?? 1000;
+    const height = metadata.height ?? 1000;
+    const pixels = width * height;
+
+    const channels = stats.channels;
+    const rgbChannels = channels.slice(0, 3);
+    const avgStdev = rgbChannels.reduce((sum, c) => sum + c.stdev, 0) / (rgbChannels.length || 1);
+
+    let category: 'photo' | 'screenshot' | 'logo' | 'illustration' = 'photo';
+    let bestFormat = 'webp';
+
+    if (pixels < 100_000) {
+      category = 'logo';
+      bestFormat = hasAlpha ? 'webp' : 'png';
+    } else if (avgStdev < 30) {
+      category = 'screenshot';
+      bestFormat = 'png';
+    } else if (avgStdev < 45) {
+      category = 'illustration';
+      bestFormat = 'webp';
+    } else {
+      category = 'photo';
+      bestFormat = 'avif'; // AVIF is superior for rich photo content
+    }
+
+    return { category, bestFormat, width, height };
+  } catch {
+    return { category: 'photo', bestFormat: 'webp' };
+  }
+}
+
 // ─── Smart quality detection ─────────────────────────────────────────
 
 async function detectSmartQuality(inputFile: string, format: string): Promise<number> {
   try {
-    const metadata = await sharp(inputFile).metadata();
-    const pixels = (metadata.width ?? 1000) * (metadata.height ?? 1000);
-    const channels = metadata.channels ?? 3;
-    const hasAlpha = metadata.hasAlpha ?? false;
-
-    // High-res photos get higher quality, small/simple images get lower
-    const isLargePhoto = pixels > 2_000_000 && channels >= 3;
-    const isSmallIcon = pixels < 100_000;
-
-    if (format === 'avif') {
-      return isLargePhoto ? 60 : isSmallIcon ? 45 : 50;
+    const { category } = await analyzeImage(inputFile);
+    if (category === 'logo') {
+      return format === 'avif' ? 45 : format === 'webp' ? 70 : 75;
     }
-    if (format === 'webp') {
-      return isLargePhoto ? 82 : isSmallIcon ? 70 : 76;
+    if (category === 'screenshot') {
+      return format === 'avif' ? 50 : format === 'webp' ? 75 : 80;
     }
-    if (format === 'png' && hasAlpha) {
-      return 80; // PNG quality affects palette generation
+    if (category === 'illustration') {
+      return format === 'avif' ? 55 : format === 'webp' ? 75 : 80;
     }
-
-    // JPEG
-    return isLargePhoto ? 85 : isSmallIcon ? 72 : 80;
+    // photo
+    return format === 'avif' ? 62 : format === 'webp' ? 82 : 85;
   } catch {
     return 80; // fallback
   }
@@ -218,7 +259,18 @@ async function processOne(
   }
 
   const inputStats = await fsExtra.stat(inputFile);
-  const formats = resolveTargetFormats(inputFile, options);
+
+  // Auto resize suggestions & best format detection
+  const { bestFormat, width, height } = await analyzeImage(inputFile);
+  if (width && width > 2500) {
+    logger.warn(`Image ${path.basename(inputFile)} is extremely high-resolution (${width}x${height}px). Consider resizing with --width to save bandwidth.`);
+  }
+
+  let formats = resolveTargetFormats(inputFile, options);
+  if (options.bestFormat) {
+    formats = [bestFormat];
+  }
+
   const supportedTargetFormats = formats.filter((f) =>
     (ENCODABLE_FORMATS as readonly string[]).includes(f),
   );
@@ -330,6 +382,9 @@ async function compressOnce(
     return { results: [], summary: buildStatsSummary([]) };
   }
 
+  const cache = await getCache();
+  const nextCache = { ...cache };
+
   if (options.dryRun) {
     logger.warn('Dry run — no files will be written');
   }
@@ -348,7 +403,39 @@ async function compressOnce(
     validFiles,
     options.concurrency || Math.max(1, Math.min(os.cpus().length, 8)),
     async (file) => {
+      const stats = await fsExtra.stat(file);
+      const fileHash = await getFileHash(file);
+      const cacheKey = `${file}:${stats.mtimeMs}`;
+
+      if (cache[cacheKey] && cache[cacheKey].hash === fileHash) {
+        completed += 1;
+        progress.update(completed);
+        spinner.text = `Processed ${completed}/${validFiles.length}`;
+        return [
+          {
+            source: file,
+            output: buildOutputPath({
+              inputRoot,
+              sourceFile: file,
+              outputRoot,
+              targetFormat: resolveTargetFormats(file, options)[0] || 'webp',
+              overwrite: options.overwrite,
+            }),
+            format: resolveTargetFormats(file, options)[0] || 'webp',
+            inputBytes: stats.size,
+            outputBytes: stats.size,
+            skipped: true,
+            skipReason: 'cached (no changes)',
+          },
+        ];
+      }
+
+      if (options.overwrite) {
+        await backupFile(file);
+      }
+
       const output = await processOne(file, options, inputRoot, outputRoot);
+      nextCache[cacheKey] = { hash: fileHash, mtime: stats.mtimeMs, size: stats.size };
       completed += 1;
       progress.update(completed);
       spinner.text = `Processed ${completed}/${validFiles.length}`;
@@ -380,6 +467,7 @@ async function compressOnce(
   }
 
   const summary = buildStatsSummary(results);
+  await saveCache(nextCache);
 
   if (options.report) {
     printDetailedReport(results, summary);
@@ -492,8 +580,9 @@ async function watchLoop(options: CompressOptions): Promise<never> {
 export async function compressImages(
   options: CompressOptions,
 ): Promise<{ results: ProcessResult[]; summary: ReportSummary }> {
-  if (options.watch) {
-    return watchLoop(options);
+  const profileOptions = applyProfile(options);
+  if (profileOptions.watch) {
+    return watchLoop(profileOptions);
   }
-  return compressOnce(options);
+  return compressOnce(profileOptions);
 }

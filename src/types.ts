@@ -29,6 +29,8 @@ export const OptionsSchema = z.object({
   concurrency: z.number().int().positive(),
   ignore: z.array(z.string()),
   formats: z.array(z.string()),
+  profile: z.string().optional(),
+  bestFormat: z.boolean().optional(),
 });
 
 export type CompressOptions = z.infer<typeof OptionsSchema>;

@@ -1,22 +1,25 @@
 /**
- * pixora-compress — Programmatic API
- *
- * Use this to integrate image compression into build pipelines,
- * scripts, or other Node.js programs.
+ * pixora — Programmatic API
  *
  * @example
  * ```ts
- * import { compress } from '@dhananjay_verma9546/pixora-compress';
+ * import { compress, generateAssets, runAudit, runBenchmark } from '@dhananjay_verma9546/pixora-compress';
  *
+ * // Compress a folder
  * const result = await compress('./images', {
  *   quality: 75,
  *   formats: ['webp', 'avif'],
  *   recursive: true,
- *   report: true,
  * });
- *
- * console.log(`Processed ${result.summary.filesProcessed} files`);
  * console.log(`Saved ${result.summary.savedPercent.toFixed(1)}%`);
+ *
+ * // Generate performance assets
+ * const assets = await generateAssets('./hero.jpg', './output');
+ * console.log(assets.blurhash);
+ *
+ * // Audit a folder for duplicates & missing formats
+ * const audit = await runAudit('./images');
+ * console.log(audit.missingWebP.length, 'images missing WebP');
  * ```
  */
 
@@ -24,8 +27,7 @@ import { compressImages } from './compress.js';
 import { buildRuntimeOptions } from './utils.js';
 import type { CompressOptions, ProcessResult, ReportSummary } from './types.js';
 
-// ─── Public API types ────────────────────────────────────────────────
-
+// ─── Public type re-exports ──────────────────────────────────────────
 export type { CompressOptions, ProcessResult, ReportSummary };
 
 export interface CompressApiOptions {
@@ -33,7 +35,7 @@ export interface CompressApiOptions {
   quality?: number;
   /** Resize width in pixels */
   width?: number;
-  /** Target output size, e.g. '300kb' or '2mb' */
+  /** Target output size e.g. '300kb' or '2mb' */
   maxSize?: string;
   /** Output directory */
   output?: string;
@@ -51,12 +53,16 @@ export interface CompressApiOptions {
   clean?: boolean;
   /** Auto-detect quality per image */
   smartQuality?: boolean;
+  /** Auto-choose best format based on image content */
+  bestFormat?: boolean;
   /** Keep EXIF/IPTC/XMP metadata */
   preserveMetadata?: boolean;
   /** Parallel workers (default: CPU count) */
   concurrency?: number;
   /** Glob patterns to ignore */
   ignore?: string[];
+  /** Compression profile: web | ecommerce | print | social | blog | thumbnail */
+  profile?: string;
 }
 
 export interface CompressResult {
@@ -64,18 +70,16 @@ export interface CompressResult {
   summary: ReportSummary;
 }
 
-// ─── Main API function ───────────────────────────────────────────────
-
+// ─── compress() ──────────────────────────────────────────────────────
 /**
  * Compress images in the given path.
  *
  * @param input - Path to a folder or single image file
  * @param options - Compression options
- * @returns Processing results and summary statistics
  */
 export async function compress(
   input: string,
-  options: CompressApiOptions = {},
+  options: CompressApiOptions = {}
 ): Promise<CompressResult> {
   const cliOptions: Record<string, unknown> = {
     quality: options.quality,
@@ -89,16 +93,35 @@ export async function compress(
     dryRun: options.dryRun,
     clean: options.clean,
     smartQuality: options.smartQuality,
+    bestFormat: options.bestFormat,
     preserveMetadata: options.preserveMetadata,
     concurrency: options.concurrency,
     ignore: options.ignore,
+    profile: options.profile,
   };
 
   const runtimeOptions = buildRuntimeOptions(input, cliOptions);
   return compressImages(runtimeOptions);
 }
 
-// Re-export internals for advanced usage
+// ─── Other API exports ───────────────────────────────────────────────
 export { compressImages } from './compress.js';
 export { createResizePipeline } from './resize.js';
 export { encodeSharp } from './convert.js';
+export { generateAssets } from './generate.js';
+export type { GenerationResult } from './generate.js';
+export { generateSpriteSheet } from './sprite.js';
+export type { SpriteResult } from './sprite.js';
+export { optimizeSvgFile } from './svg.js';
+export { runAudit, getImageStats, printAuditReport } from './audit.js';
+export type { AuditResult, ImageStats } from './audit.js';
+export { compareImagesQuality } from './metrics.js';
+export type { QualityComparison } from './metrics.js';
+export { runBenchmark } from './benchmark.js';
+export { updateHtmlFile, updateMarkdownFile } from './integrations.js';
+export { generateReports } from './reports.js';
+export type { ReportOptions } from './reports.js';
+export { getCache, saveCache } from './cache.js';
+export { backupFile, restoreBackups } from './backup.js';
+export { COMPRESSION_PROFILES, applyProfile } from './profiles.js';
+export type { CompressionProfile } from './profiles.js';
