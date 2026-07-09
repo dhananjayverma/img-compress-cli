@@ -6,7 +6,7 @@
 [![license](https://img.shields.io/npm/l/@dhananjay_verma9546/pixora-compress.svg?style=flat-square)](LICENSE)
 [![node](https://img.shields.io/node/v/@dhananjay_verma9546/pixora-compress.svg?style=flat-square)](package.json)
 
-Pixora is a complete automation engine for modern web applications. Compress, convert, audit, generate responsive image sets, extract color palettes, bundle sprite sheets, detect subjects using lightweight heuristics, simulate CDNs, run visual diffs, and configure custom workflow engines.
+Pixora is a complete automation engine and CLI toolkit for modern web applications. Compress, convert, audit, generate responsive image sets, extract color palettes, bundle sprite sheets, detect subjects using lightweight heuristics, simulate CDNs, run visual diffs, and configure custom workflow engines.
 
 ---
 
@@ -35,9 +35,7 @@ graph TD
 
 ---
 
-## ✨ Feature Index (Everything We Made)
-
-Here is a full breakdown of every module and capability now supported by Pixora v2:
+## ✨ Features & Capabilities
 
 ### 🚀 1. Core Optimization & Compression
 * **In-Place Compression**: Run standard optimizations on existing JPEGs, PNGs, and GIFs using `pixora compress`.
@@ -76,10 +74,13 @@ Here is a full breakdown of every module and capability now supported by Pixora 
 ## 📥 Installation
 
 ```bash
-# Global installation
+# Install globally for CLI usage
 npm install -g @dhananjay_verma9546/pixora-compress
 
-# Run instantly via npx
+# Or add locally to your project's devDependencies
+npm install --save-dev @dhananjay_verma9546/pixora-compress
+
+# Or run instantly without installation
 npx @dhananjay_verma9546/pixora-compress build ./assets
 ```
 
@@ -88,13 +89,15 @@ npx @dhananjay_verma9546/pixora-compress build ./assets
 ## 🚀 CLI Commands Reference
 
 ### 1. Build Pipeline
+Optimizes all images, generates responsive sets, optimizes SVGs, and outputs a `manifest.json`:
 ```bash
 pixora build ./src/assets -o ./dist/public -q 80
 ```
 
 ### 2. Project Scanner
+Scan code files and folder structures for broken paths, missing formats, duplicates, and missing `loading="lazy"` tags:
 ```bash
-# Scan code and print issues
+# Scan and print issues
 pixora scan ./src
 
 # Scan and automatically resolve duplicates, compress large images, and generate formats
@@ -103,24 +106,35 @@ pixora scan ./src --fix
 
 ### 3. Image Analysis & Performance Score
 ```bash
+# Analyze layout type, transparent channels, and details
 pixora analyze ./assets/hero.png
+
+# Grade folder layout, sizing, and formats from 0-100
 pixora score ./assets
 ```
 
 ### 4. Extract Palette
+Extracts a 5-color semantic brand palette and formats for CSS variables or Tailwind configs:
 ```bash
 pixora palette logo.png --tailwind
 ```
 
-### 5. App Icons & Social Assets
+### 5. App Icons & Social Open Graph Assets
 ```bash
 pixora icons icon.png -o ./public/icons
 pixora og image.png -o ./public/og
 ```
 
 ### 6. Difference Heatmaps
+Generate structural diff heatmaps comparing original and optimized files:
 ```bash
 pixora compare original.jpg compressed.webp --heatmap
+```
+
+### 7. CDN Dev Server & Web Dashboard
+```bash
+# Start local server on port 4000 and open live dashboard
+pixora dashboard ./assets -p 4000
 ```
 
 ---
@@ -162,3 +176,50 @@ Run workflow:
 ```bash
 pixora workflow ./workflow.json ./assets
 ```
+
+---
+
+## 💎 Framework Recipes
+
+Run specialized integration recipes for your chosen framework workspace:
+```bash
+# Automatically optimize and wire assets in React, Next.js, Vite, or Astro
+pixora recipe nextjs ./my-next-app
+pixora recipe react ./my-react-app
+pixora recipe astro ./my-astro-app
+```
+
+---
+
+## ⚓ Git Integration
+
+Install the automatic pre-commit hook:
+```bash
+pixora git-hook ./
+```
+Every `git commit` will automatically detect, optimize, and replace staged images.
+
+---
+
+## 📦 Programmatic API
+
+You can also import Pixora directly in your Node.js scripts and build files:
+
+```typescript
+import { compress } from '@dhananjay_verma9546/pixora-compress';
+
+const result = await compress('./images/hero.png', {
+  output: './dist',
+  formats: ['webp', 'avif'],
+  width: 1200,
+  quality: 80
+});
+
+console.log(`Saved ${result.summary.savedPercent}%`);
+```
+
+---
+
+## 🛡️ License
+
+MIT License. Copyright (c) 2026.
