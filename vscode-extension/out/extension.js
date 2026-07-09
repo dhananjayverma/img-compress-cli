@@ -45,6 +45,11 @@ function getCliExecutor() {
     if (fs.existsSync(localCliPath)) {
         return `node "${localCliPath}"`;
     }
+    // Fallback for VSIX local install on this machine
+    const hardcodedLocalPath = '/Users/laptopbazaar/Desktop/image/dist/cli.js';
+    if (fs.existsSync(hardcodedLocalPath)) {
+        return `node "${hardcodedLocalPath}"`;
+    }
     return 'pixora';
 }
 function isCliAvailable() {
@@ -109,22 +114,33 @@ function activate(context) {
             return new Promise((resolve) => {
                 const executor = getCliExecutor();
                 const command = `${executor} compress "${filePath}" --overwrite --quality 80 --smart-quality --json`;
-                (0, child_process_1.exec)(command, (err, stdout, stderr) => {
+                (0, child_process_1.exec)(command, { cwd: path.dirname(filePath) }, (err, stdout, stderr) => {
                     try {
+                        if (stdout) {
+                            try {
+                                const result = JSON.parse(stdout);
+                                if (!result.success) {
+                                    throw new Error(result.error || 'Compression failed');
+                                }
+                                const stats = result.results?.[0];
+                                if (stats) {
+                                    const savedKb = ((stats.inputBytes - stats.outputBytes) / 1024).toFixed(1);
+                                    vscode.window.showInformationMessage(`⚡ Pixora Optimized! Saved ${savedKb} KB (${result.summary.savedPercent}%)`);
+                                }
+                                else {
+                                    vscode.window.showInformationMessage('⚡ Pixora: Image already fully optimized.');
+                                }
+                                resolve();
+                                return;
+                            }
+                            catch (e) {
+                                if (e.message === 'Compression failed' || e.message.includes('failed')) {
+                                    throw e;
+                                }
+                            }
+                        }
                         if (err) {
-                            throw new Error(stderr || err.message);
-                        }
-                        const result = JSON.parse(stdout);
-                        if (!result.success) {
-                            throw new Error(result.error || 'Compression failed');
-                        }
-                        const stats = result.results?.[0];
-                        if (stats) {
-                            const savedKb = ((stats.inputBytes - stats.outputBytes) / 1024).toFixed(1);
-                            vscode.window.showInformationMessage(`⚡ Pixora Optimized! Saved ${savedKb} KB (${result.summary.savedPercent}%)`);
-                        }
-                        else {
-                            vscode.window.showInformationMessage('⚡ Pixora: Image already fully optimized.');
+                            throw new Error(stderr || stdout || err.message);
                         }
                     }
                     catch (error) {
@@ -156,19 +172,26 @@ function activate(context) {
             return new Promise((resolve) => {
                 const executor = getCliExecutor();
                 const command = `${executor} audit "${rootPath}" --json`;
-                (0, child_process_1.exec)(command, (err, stdout, stderr) => {
+                (0, child_process_1.exec)(command, { cwd: rootPath }, (err, stdout, stderr) => {
                     try {
-                        if (err) {
-                            throw new Error(stderr || err.message);
+                        if (stdout) {
+                            try {
+                                const auditResult = JSON.parse(stdout);
+                                const channel = vscode.window.createOutputChannel('Pixora Audits');
+                                channel.show();
+                                channel.appendLine(`⚡ Pixora Audit Report for ${rootPath}`);
+                                channel.appendLine(`=========================================`);
+                                channel.appendLine(`Unoptimized count: ${auditResult.missingWebP.length} assets missing WebP/AVIF equivalents`);
+                                channel.appendLine(`Total files evaluated: ${auditResult.totalImages}`);
+                                channel.appendLine(`=========================================`);
+                                resolve();
+                                return;
+                            }
+                            catch (e) { }
                         }
-                        const auditResult = JSON.parse(stdout);
-                        const channel = vscode.window.createOutputChannel('Pixora Audits');
-                        channel.show();
-                        channel.appendLine(`⚡ Pixora Audit Report for ${rootPath}`);
-                        channel.appendLine(`=========================================`);
-                        channel.appendLine(`Unoptimized count: ${auditResult.missingWebP.length} assets missing WebP/AVIF equivalents`);
-                        channel.appendLine(`Total files evaluated: ${auditResult.totalImages}`);
-                        channel.appendLine(`=========================================`);
+                        if (err) {
+                            throw new Error(stderr || stdout || err.message);
+                        }
                     }
                     catch (error) {
                         vscode.window.showErrorMessage(`❌ Pixora Audit failed: ${error.message}`);

@@ -408,13 +408,17 @@ async function compressOnce(
     logger.warn('Dry run — no files will be written');
   }
 
-  const spinner = ora({
-    text: `Preparing ${validFiles.length} image${validFiles.length === 1 ? '' : 's'}…`,
-    color: 'magenta',
-    prefixText: '  ',
-  }).start();
+  const spinner = logger.isSilent
+    ? { start() { return this; }, stop() {}, succeed() {}, text: '' }
+    : ora({
+        text: `Preparing ${validFiles.length} image${validFiles.length === 1 ? '' : 's'}…`,
+        color: 'magenta',
+        prefixText: '  ',
+      }).start();
 
-  const progress = makeWriter(validFiles.length);
+  const progress = logger.isSilent
+    ? { start() {}, update() {}, stop() {} }
+    : makeWriter(validFiles.length);
   progress.start();
 
   let completed = 0;
@@ -468,30 +472,34 @@ async function compressOnce(
   );
 
   // Per-file log
-  for (const item of results) {
-    if (item.skipped) {
+  if (!logger.isSilent) {
+    for (const item of results) {
+      if (item.skipped) {
+        console.log(
+          `  ${chalk.yellow('⏩')} ${chalk.dim(path.relative(process.cwd(), item.source))} ${chalk.dim(`(${item.skipReason})`)}`,
+        );
+        continue;
+      }
+      const saved = item.inputBytes - item.outputBytes;
+      const savedText =
+        saved >= 0
+          ? chalk.green(`-${formatBytes(saved)}`)
+          : chalk.red(`+${formatBytes(Math.abs(saved))}`);
       console.log(
-        `  ${chalk.yellow('⏩')} ${chalk.dim(path.relative(process.cwd(), item.source))} ${chalk.dim(`(${item.skipReason})`)}`,
+        `  ${chalk.green('✔')} ${chalk.white(path.relative(process.cwd(), item.source))} → ${chalk.dim(path.relative(process.cwd(), item.output))} ${savedText}`,
       );
-      continue;
     }
-    const saved = item.inputBytes - item.outputBytes;
-    const savedText =
-      saved >= 0
-        ? chalk.green(`-${formatBytes(saved)}`)
-        : chalk.red(`+${formatBytes(Math.abs(saved))}`);
-    console.log(
-      `  ${chalk.green('✔')} ${chalk.white(path.relative(process.cwd(), item.source))} → ${chalk.dim(path.relative(process.cwd(), item.output))} ${savedText}`,
-    );
   }
 
   const summary = buildStatsSummary(results);
   await saveCache(nextCache);
 
-  if (options.report) {
-    printDetailedReport(results, summary);
-  } else {
-    printCompactSummary(summary);
+  if (!logger.isSilent) {
+    if (options.report) {
+      printDetailedReport(results, summary);
+    } else {
+      printCompactSummary(summary);
+    }
   }
 
   if (options.plugins) {
