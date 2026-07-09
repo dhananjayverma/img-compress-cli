@@ -68,11 +68,12 @@
    "license": "MIT",
    "repository": {
       "type": "git",
-      "url": "https://github.com/dhananjayverma/img-compress-cli.git"
+      "url": "https://github.com/dhananjayverma/pixora.git"
    },
    "bugs": {
-      "url": "https://github.com/dhananjayverma/img-compress-cli/issues"
+      "url": "https://github.com/dhananjayverma/pixora/issues"
    },
+   "homepage": "https://github.com/dhananjayverma/pixora#readme",
    "dependencies": {
       "blurhash": "^2.0.5",
       "chalk": "^5.6.2",
