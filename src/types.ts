@@ -31,6 +31,7 @@ export const OptionsSchema = z.object({
   formats: z.array(z.string()),
   profile: z.string().optional(),
   bestFormat: z.boolean().optional(),
+  plugins: z.array(z.any()).optional(),
 });
 
 export type CompressOptions = z.infer<typeof OptionsSchema>;
@@ -83,5 +84,17 @@ export interface ConfigFile {
   concurrency?: number;
   ignore?: string | string[];
   maxSize?: string;
+  plugins?: PixoraPlugin[];
   [key: string]: unknown;
+}
+
+export interface PixoraPlugin {
+  name: string;
+  beforeCompress?(options: CompressOptions): Promise<void> | void;
+  afterCompress?(results: ProcessResult[], summary: ReportSummary): Promise<void> | void;
+  transform?(
+    filePath: string,
+    buffer: Buffer,
+    options: CompressOptions
+  ): Promise<{ buffer: Buffer; format?: string } | null | void> | { buffer: Buffer; format?: string } | null | void;
 }

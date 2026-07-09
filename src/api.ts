@@ -24,6 +24,52 @@ function parseBody(req: http.IncomingMessage): Promise<Record<string, unknown>> 
   });
 }
 
+function parseRawBody(req: http.IncomingMessage): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
+function parseMultipart(buffer: Buffer, contentType: string): { filename?: string; buffer: Buffer } | null {
+  const match = contentType.match(/boundary=(.+)/);
+  if (!match) return null;
+  const boundary = '--' + match[1];
+  
+  const boundaryBuffer = Buffer.from(boundary);
+  const parts: Buffer[] = [];
+  
+  let index = buffer.indexOf(boundaryBuffer);
+  if (index === -1) return null;
+  
+  while (index !== -1) {
+    const nextIndex = buffer.indexOf(boundaryBuffer, index + boundaryBuffer.length);
+    if (nextIndex === -1) break;
+    
+    const part = buffer.slice(index + boundaryBuffer.length, nextIndex);
+    parts.push(part);
+    index = nextIndex;
+  }
+  
+  for (const part of parts) {
+    const headerEnd = part.indexOf('\r\n\r\n');
+    if (headerEnd === -1) continue;
+    
+    const header = part.slice(0, headerEnd).toString();
+    const body = part.slice(headerEnd + 4, part.length - 2); // subtract \r\n
+    
+    if (header.includes('filename=')) {
+      const filenameMatch = header.match(/filename="(.+?)"/);
+      const filename = filenameMatch ? filenameMatch[1] : undefined;
+      return { filename, buffer: body };
+    }
+  }
+  
+  return null;
+}
+
 function sendJson(res: http.ServerResponse, status: number, data: unknown): void {
   const payload = JSON.stringify(data, null, 2);
   res.writeHead(status, {
@@ -45,25 +91,71 @@ async function handleCompress(
   req: http.IncomingMessage,
   res: http.ServerResponse
 ): Promise<void> {
+  const contentType = req.headers['content-type'] || '';
+  const parsedUrl = new URL(req.url || '', 'http://localhost');
+  const quality = Number(parsedUrl.searchParams.get('quality') || 80);
+  const format = parsedUrl.searchParams.get('format') || 'webp';
+
+  // 1. Upload mode (Multipart or direct binary stream)
+  if (contentType.includes('multipart/form-data') || contentType.startsWith('image/') || contentType === 'application/octet-stream') {
+    try {
+      const rawData = await parseRawBody(req);
+      let bufferToProcess = rawData;
+      let originalName = 'uploaded-file';
+
+      if (contentType.includes('multipart/form-data')) {
+        const parsedPart = parseMultipart(rawData, contentType);
+        if (!parsedPart) {
+          return sendError(res, 400, 'Invalid multipart/form-data payload');
+        }
+        bufferToProcess = parsedPart.buffer;
+        if (parsedPart.filename) originalName = parsedPart.filename;
+      }
+
+      let pipeline = sharp(bufferToProcess);
+
+      if (format === 'webp') pipeline = pipeline.webp({ quality });
+      else if (format === 'avif') pipeline = pipeline.avif({ quality });
+      else pipeline = pipeline.jpeg({ quality, mozjpeg: true });
+
+      const outputBuffer = await pipeline.toBuffer();
+      const mime = format === 'webp' ? 'image/webp' : format === 'avif' ? 'image/avif' : 'image/jpeg';
+
+      res.writeHead(200, {
+        'Content-Type': mime,
+        'Content-Length': outputBuffer.length,
+        'Access-Control-Allow-Origin': '*',
+        'X-Pixora-Filename': originalName,
+        'X-Pixora-Original-Size': bufferToProcess.length.toString(),
+        'X-Pixora-Compressed-Size': outputBuffer.length.toString(),
+      });
+      res.end(outputBuffer);
+      return;
+    } catch (err) {
+      return sendError(res, 400, `Compression failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  // 2. Local file compression via JSON
   const body = await parseBody(req);
   const filePath = body.file as string | undefined;
-  const quality = Number(body.quality ?? 80);
-  const format = (body.format as string | undefined) ?? 'webp';
+  const jsonQuality = Number(body.quality ?? quality);
+  const jsonFormat = (body.format as string | undefined) ?? format;
 
   if (!filePath) return sendError(res, 400, 'Missing required field: file');
 
   const resolved = path.resolve(filePath);
-  if (!(await fs.pathExists(resolved))) return sendError(res, 404, `File not found: filePath`);
+  if (!(await fs.pathExists(resolved))) return sendError(res, 404, `File not found: ${filePath}`);
 
-  const ext = format === 'webp' ? 'webp' : format === 'avif' ? 'avif' : 'jpg';
+  const ext = jsonFormat === 'webp' ? 'webp' : jsonFormat === 'avif' ? 'avif' : 'jpg';
   const outDir = path.dirname(resolved);
   const base = path.basename(resolved, path.extname(resolved));
   const outPath = path.join(outDir, `${base}-api-out.${ext}`);
 
   let pipeline = sharp(resolved);
-  if (format === 'webp') pipeline = pipeline.webp({ quality });
-  else if (format === 'avif') pipeline = pipeline.avif({ quality });
-  else pipeline = pipeline.jpeg({ quality, mozjpeg: true });
+  if (jsonFormat === 'webp') pipeline = pipeline.webp({ quality: jsonQuality });
+  else if (jsonFormat === 'avif') pipeline = pipeline.avif({ quality: jsonQuality });
+  else pipeline = pipeline.jpeg({ quality: jsonQuality, mozjpeg: true });
 
   await pipeline.toFile(outPath);
 
@@ -156,9 +248,11 @@ async function router(
   if (method === 'GET' && url === '/') {
     sendJson(res, 200, {
       name: 'Pixora REST API',
-      version: '1.0.0',
+      version: '1.1.0',
+      description: 'Developer Asset Optimization API',
       endpoints: [
-        { method: 'POST', path: '/compress', body: { file: 'string', quality: 'number?', format: 'webp|avif|jpg?' } },
+        { method: 'POST', path: '/compress', body: { file: 'string', quality: 'number?', format: 'webp|avif|jpg?' }, description: 'Compress file on local disk' },
+        { method: 'POST', path: '/compress?quality=80&format=webp', body: 'Binary image buffer / multipart file upload', description: 'Compress and return binary image on-the-fly' },
         { method: 'POST', path: '/analyze',  body: { file: 'string' } },
         { method: 'POST', path: '/palette',  body: { file: 'string' } },
         { method: 'POST', path: '/score',    body: { dir: 'string?' } },
@@ -202,7 +296,7 @@ export async function startApiServer(port = 3333): Promise<void> {
   server.listen(port, () => {
     logger.success(`Pixora REST API running at http://localhost:${port}`);
     logger.info('Available endpoints:');
-    logger.dim('  POST /compress  — compress an image');
+    logger.dim('  POST /compress  — compress local path OR upload image binary/multipart to compress on-the-fly');
     logger.dim('  POST /analyze   — analyze image heuristics');
     logger.dim('  POST /palette   — extract color palette');
     logger.dim('  POST /score     — get performance score for a folder');

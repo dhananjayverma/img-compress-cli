@@ -1,12 +1,12 @@
-# ⚡ Pixora — Industry-Grade Asset Optimization Toolkit
+# ⚡ Pixora — Developer Asset Optimization Platform
 
-> Fast, automated, cross-platform image optimization pipeline and developer toolkit built on [sharp](https://sharp.pixelplumbing.com/).
+> Fast, automated, cross-platform Automated Asset Pipeline for Modern Web Apps built on [sharp](https://sharp.pixelplumbing.com/).
 
 [![npm version](https://img.shields.io/npm/v/@dhananjay_verma9546/pixora-compress.svg?style=flat-square&color=7C3AED)](https://www.npmjs.com/package/@dhananjay_verma9546/pixora-compress)
 [![license](https://img.shields.io/npm/l/@dhananjay_verma9546/pixora-compress.svg?style=flat-square)](LICENSE)
 [![node](https://img.shields.io/node/v/@dhananjay_verma9546/pixora-compress.svg?style=flat-square)](package.json)
 
-Pixora is a complete automation engine and CLI toolkit for modern web applications. Compress, convert, audit, generate responsive image sets, extract color palettes, bundle sprite sheets, detect subjects using lightweight heuristics, simulate CDNs, run visual diffs, and configure custom workflow engines.
+Pixora is an Automated Asset Pipeline for Modern Web Apps. Compress, convert, audit, generate responsive image sets, extract color palettes, bundle sprite sheets, detect subjects using lightweight heuristics, simulate CDNs, run visual diffs, and configure custom workflow engines.
 
 ---
 
@@ -68,6 +68,7 @@ graph TD
 * **Framework Recipes**: Special templates for `nextjs`, `react`, `vite`, and `astro` projects.
 * **Dev Server & CDN Simulator**: Run a local dev server simulating on-the-fly transformations (e.g. `?w=300&format=webp`).
 * **Interactive Web Dashboard**: Graphical charts showing savings, format distributions, and CDN statistics served at `/__dashboard`.
+* **VS Code Extension**: Optimize assets and run audits directly from your editor.
 
 ---
 
@@ -198,6 +199,77 @@ Install the automatic pre-commit hook:
 pixora git-hook ./
 ```
 Every `git commit` will automatically detect, optimize, and replace staged images.
+
+## 🔌 Integrations & Ecosystem
+
+Pixora provides a full developer asset optimization ecosystem with various integrations:
+
+### 1. VS Code Extension
+Located in [vscode-extension/](file:///Users/laptopbazaar/Desktop/image/vscode-extension), this extension lets you optimize and audit assets directly within your editor.
+* **Right-Click Compression**: Right-click any image in the explorer sidebar and select **Pixora: Compress Image** to optimize it in-place.
+* **Workspace Auditing**: Command **Pixora: Audit Workspace for Unoptimized Assets** highlights which files are missing modern formats or need optimization.
+* For more details, see the [vscode-extension/README.md](file:///Users/laptopbazaar/Desktop/image/vscode-extension/README.md).
+
+### 2. Vite Plugin
+Runs as a build-time step during `vite build` to optimize and convert assets automatically in the output bundle.
+```typescript
+import { pixoraPlugin } from '@dhananjay_verma9546/pixora-compress/plugins/vite';
+
+export default {
+  plugins: [
+    pixoraPlugin({
+      quality: 80,
+      formats: ['webp', 'avif']
+    })
+  ]
+}
+```
+
+### 3. Next.js Plugin
+Automatically optimizes your `public/` directory assets during Next.js production builds.
+```javascript
+const { withPixora } = require('@dhananjay_verma9546/pixora-compress/plugins/next');
+
+module.exports = withPixora({
+  // Your nextConfig
+}, {
+  quality: 80,
+  formats: ['webp']
+});
+```
+
+### 4. GitHub Action
+Integrate Pixora directly into your CI/CD pipelines to validate, optimize, and automatically commit compressed assets.
+```yaml
+- name: Pixora Asset Optimizer
+  uses: ./ # References the root action.yml
+  with:
+    input: './public/images'
+    quality: '85'
+    formats: 'webp,avif'
+    commit-changes: 'true'
+```
+
+### 5. Docker Support
+Pixora can run in a sandboxed Docker container, preconfigured to host the Local REST API server.
+```bash
+# Build the image
+docker build -t pixora-platform .
+
+# Run the REST API server on port 3333
+docker run -p 3333:3333 pixora-platform
+```
+
+### 6. Local REST API Mode
+Start a dedicated asset optimization and analytics microservice locally:
+```bash
+pixora api --port 3333
+```
+* **POST `/compress`**: Compresses an image file on disk or accepts raw binary / multipart uploads.
+* **POST `/analyze`**: Analyzes the layout type, transparent channels, and details.
+* **POST `/palette`**: Extracts a semantic color palette.
+* **POST `/score`**: Grades project assets folder layout, sizing, and formats.
+* **POST `/meta`**: Extracts file metadata.
 
 ---
 

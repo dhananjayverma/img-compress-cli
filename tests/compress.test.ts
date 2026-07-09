@@ -204,4 +204,41 @@ describe('compress API', () => {
       }),
     ).rejects.toThrow('Use either --overwrite or --output');
   });
+
+  it('runs plugin hooks successfully', async () => {
+    let beforeCalled = false;
+    let afterCalled = false;
+    let transformCalled = false;
+
+    const testPlugin = {
+      name: 'test-plugin',
+      beforeCompress(opts: any) {
+        beforeCalled = true;
+        expect(opts.input).toContain('red.jpg');
+      },
+      transform(filePath: string, buffer: Buffer) {
+        transformCalled = true;
+        expect(filePath).toContain('red.jpg');
+        // Let's modify the buffer or return it
+        return { buffer };
+      },
+      afterCompress(results: any, summary: any) {
+        afterCalled = true;
+        expect(results.length).toBe(1);
+        expect(summary.filesProcessed).toBe(1);
+      }
+    };
+
+    const result = await compress(path.join(FIXTURES_DIR, 'red.jpg'), {
+      output: OUTPUT_DIR,
+      plugins: [testPlugin],
+    });
+
+    expect(beforeCalled).toBe(true);
+    expect(transformCalled).toBe(true);
+    expect(afterCalled).toBe(true);
+    expect(result.summary.filesProcessed).toBe(1);
+
+    await fs.remove(OUTPUT_DIR);
+  });
 });

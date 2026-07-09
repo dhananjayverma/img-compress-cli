@@ -297,6 +297,7 @@ export function buildRuntimeOptions(
     formats: parsed.formats as string[],
     profile: parsed.profile as string | undefined,
     bestFormat: parsed.bestFormat === undefined ? undefined : Boolean(parsed.bestFormat),
+    plugins: merged.plugins as any[] | undefined,
   };
 
   return OptionsSchema.parse(result);

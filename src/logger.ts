@@ -40,7 +40,7 @@ export const logger = {
     console.log(
       chalk.hex('#7C3AED').bold('  ⚡ pixora') +
         chalk.dim(' v1.1.0') +
-        chalk.dim('  — Asset Optimization Toolkit')
+        chalk.dim('  — Developer Asset Optimization Platform')
     );
     console.log(
       chalk.dim('  compress  convert  resize  audit  compare  generate  watch  init  undo')

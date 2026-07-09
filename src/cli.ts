@@ -62,7 +62,7 @@ logger.banner();
 
 program
   .name('pixora')
-  .description('⚡ Pixora — Industry-grade asset optimization toolkit')
+  .description('⚡ Pixora — Developer Asset Optimization Platform & Automated Asset Pipeline')
   .version('1.1.0', '-v, --version');
 
 // ─── pixora compress ────────────────────────────────────────────────

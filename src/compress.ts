@@ -294,9 +294,20 @@ async function processOne(
       overwrite: options.overwrite,
     });
 
+    let buffer = await encodeBestEffort(inputFile, format, options);
+    if (options.plugins) {
+      for (const plugin of options.plugins) {
+        if (plugin.transform) {
+          const transformed = await plugin.transform(inputFile, buffer, options);
+          if (transformed) {
+            buffer = transformed.buffer;
+          }
+        }
+      }
+    }
+
     if (options.dryRun) {
       // Estimate output size without writing
-      const buffer = await encodeBestEffort(inputFile, format, options);
       results.push({
         source: inputFile,
         output: outputPath,
@@ -307,7 +318,6 @@ async function processOne(
       continue;
     }
 
-    const buffer = await encodeBestEffort(inputFile, format, options);
     await writeOutputFile(outputPath, buffer);
 
     const outputStats = await fsExtra.stat(outputPath);
@@ -350,6 +360,15 @@ async function runWithConcurrency<T, R>(
 async function compressOnce(
   options: CompressOptions,
 ): Promise<{ results: ProcessResult[]; summary: ReportSummary }> {
+  // Run beforeCompress hooks
+  if (options.plugins) {
+    for (const plugin of options.plugins) {
+      if (plugin.beforeCompress) {
+        await plugin.beforeCompress(options);
+      }
+    }
+  }
+
   const source = path.resolve(options.input);
   const exists = await fsExtra.pathExists(source);
   if (!exists) {
@@ -473,6 +492,14 @@ async function compressOnce(
     printDetailedReport(results, summary);
   } else {
     printCompactSummary(summary);
+  }
+
+  if (options.plugins) {
+    for (const plugin of options.plugins) {
+      if (plugin.afterCompress) {
+        await plugin.afterCompress(results, summary);
+      }
+    }
   }
 
   return { results, summary };

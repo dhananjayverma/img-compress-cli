@@ -1,0 +1,22 @@
+name: Optimize Assets
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Optimize Images via Pixora
+        uses: ./ # Points to the action.yml in the root of your repo
+        with:
+          input: 'public/images'
+          quality: 75
+          formats: 'webp,avif'
+          commit-changes: 'true' # Automatically pushes optimized assets back to pull request branch

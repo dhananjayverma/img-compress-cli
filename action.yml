@@ -1,0 +1,75 @@
+name: 'Pixora Asset Optimizer'
+description: 'Automated Asset Pipeline for Modern Web Apps. Compress, resize, and optimize images directly in your CI/CD pipeline.'
+author: 'Dhananjay Verma'
+branding:
+  icon: 'zap'
+  color: 'purple'
+
+inputs:
+  input:
+    description: 'Folder or file to optimize (default: ".")'
+    required: false
+    default: '.'
+  output:
+    description: 'Output directory'
+    required: false
+  quality:
+    description: 'Target compression quality (1-100)'
+    required: false
+  formats:
+    description: 'Comma-separated target formats (e.g. webp,avif,jpg)'
+    required: false
+  max-size:
+    description: 'Target budget size per file (e.g. 300kb)'
+    required: false
+  recursive:
+    description: 'Scan subfolders recursively (true/false)'
+    required: false
+    default: 'true'
+  concurrency:
+    description: 'Number of parallel workers'
+    required: false
+  profile:
+    description: 'Preconfigured optimizer profile (web, ecommerce, social, print, etc.)'
+    required: false
+  commit-changes:
+    description: 'Automatically commit and push optimized assets back to the branch'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-size: '20'
+
+    - name: Run Pixora Optimizer
+      shell: bash
+      run: |
+        ARGS=""
+        if [ -n "${{ inputs.output }}" ]; then ARGS="$ARGS --output ${{ inputs.output }}"; fi
+        if [ -n "${{ inputs.quality }}" ]; then ARGS="$ARGS --quality ${{ inputs.quality }}"; fi
+        if [ -n "${{ inputs.formats }}" ]; then ARGS="$ARGS --format ${{ inputs.formats }}"; fi
+        if [ -n "${{ inputs.max-size }}" ]; then ARGS="$ARGS --max-size ${{ inputs.max-size }}"; fi
+        if [ "${{ inputs.recursive }}" = "true" ]; then ARGS="$ARGS --recursive"; fi
+        if [ -n "${{ inputs.concurrency }}" ]; then ARGS="$ARGS --concurrency ${{ inputs.concurrency }}"; fi
+        if [ -n "${{ inputs.profile }}" ]; then ARGS="$ARGS --profile ${{ inputs.profile }}"; fi
+
+        echo "Running Pixora on: ${{ inputs.input }} with args: $ARGS"
+        npx -y @dhananjay_verma9546/pixora-compress compress "${{ inputs.input }}" $ARGS
+
+    - name: Commit Optimized Assets
+      if: ${{ inputs.commit-changes == 'true' }}
+      shell: bash
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add .
+        if git diff --staged --quiet; then
+          echo "No asset changes to commit."
+        else
+          git commit -m "chore(assets): automated asset optimization via Pixora [skip ci]"
+          git push
+        fi

@@ -25,7 +25,7 @@
 
 import { compressImages } from './compress.js';
 import { buildRuntimeOptions } from './utils.js';
-import type { CompressOptions, ProcessResult, ReportSummary } from './types.js';
+import type { CompressOptions, ProcessResult, ReportSummary, PixoraPlugin } from './types.js';
 
 // ─── Public type re-exports ──────────────────────────────────────────
 export type { CompressOptions, ProcessResult, ReportSummary };
@@ -63,6 +63,7 @@ export interface CompressApiOptions {
   ignore?: string[];
   /** Compression profile: web | ecommerce | print | social | blog | thumbnail */
   profile?: string;
+  plugins?: PixoraPlugin[];
 }
 
 export interface CompressResult {
@@ -98,6 +99,7 @@ export async function compress(
     concurrency: options.concurrency,
     ignore: options.ignore,
     profile: options.profile,
+    plugins: options.plugins,
   };
 
   const runtimeOptions = buildRuntimeOptions(input, cliOptions);
@@ -125,3 +127,8 @@ export { getCache, saveCache } from './cache.js';
 export { backupFile, restoreBackups } from './backup.js';
 export { COMPRESSION_PROFILES, applyProfile } from './profiles.js';
 export type { CompressionProfile } from './profiles.js';
+export { pixoraPlugin } from './plugins/vite.js';
+export type { VitePluginPixoraOptions } from './plugins/vite.js';
+export { withPixora } from './plugins/next.js';
+export type { NextPluginPixoraOptions } from './plugins/next.js';
+export type { PixoraPlugin } from './types.js';

@@ -1,0 +1,48 @@
+{
+  "name": "vscode-pixora",
+  "displayName": "Pixora Developer Asset Optimization",
+  "description": "Developer Asset Optimization Platform in your editor. Compress assets, run audits, and analyze layout performance.",
+  "version": "1.0.0",
+  "publisher": "dhananjayverma",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscode-pixora.compressFile",
+        "title": "Pixora: Compress Image"
+      },
+      {
+        "command": "vscode-pixora.auditWorkspace",
+        "title": "Pixora: Audit Workspace for Unoptimized Assets"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "vscode-pixora.compressFile",
+          "when": "resourceExtName =~ /png|jpg|jpeg|webp|avif|gif|svg/",
+          "group": "modification"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "@dhananjay_verma9546/pixora-compress": "file:.."
+  }
+}
